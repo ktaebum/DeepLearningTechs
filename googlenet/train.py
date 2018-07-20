@@ -189,7 +189,7 @@ def main():
 
             batch_size = images.size(0)
 
-            outputs = model(images)
+            outputs, _, _ = model(images)
             logits = F.log_softmax(outputs, dim=1)
             _, predicts = torch.max(logits, 1)
             corrects = torch.sum(predicts == labels)
@@ -215,14 +215,21 @@ def main():
 
             batch_size = images.size(0)
 
-            outputs = model(images)
+            outputs, aux1, aux2 = model(images)
             logits = F.log_softmax(outputs, dim=1)
+            aux1_logits = F.log_softmax(aux1, dim=1)
+            aux2_logits = F.log_softmax(aux2, dim=1)
             _, predicts = torch.max(logits, 1)
             corrects = torch.sum(predicts == labels)
             accuracy = corrects.double() / batch_size
 
             optimizer.zero_grad()
             loss = criterion(logits, labels)
+            aux_loss1 = criterion(aux1_logits, labels)
+            aux_loss2 = criterion(aux2_logits, labels)
+
+            loss += (0.3 * (aux_loss1 + aux_loss2))
+
             loss.backward()
             optimizer.step()
 

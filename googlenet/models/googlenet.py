@@ -122,7 +122,7 @@ class GoogleNet(nn.Module):
     GoogleNet
     """
 
-    def __init__(self, mode='naive'):
+    def __init__(self, mode='naive', aux=True):
 
         super(GoogleNet, self).__init__()
         self.stem = nn.Sequential(
@@ -147,6 +147,17 @@ class GoogleNet(nn.Module):
             raise ValueError(
                 'Invalid mode %s, pick among {}'.format(VALID_MODES) % mode)
 
+        self.aux = aux
+        if aux:
+            self.aux1_conv = nn.Sequential(
+                nn.AvgPool2d(5, 3), nn.Conv2d(512, 64, 1))
+            self.aux1_fc = nn.Sequential(
+                nn.Linear(1024, 512), nn.Dropout(0.7), nn.Linear(512, 10))
+            self.aux2_conv = nn.Sequential(
+                nn.AvgPool2d(5, 3), nn.Conv2d(528, 64, 1))
+            self.aux2_fc = nn.Sequential(
+                nn.Linear(1024, 512), nn.Dropout(0.7), nn.Linear(512, 10))
+
         self.inception3 = self._build_inception_layer(cfg['3'])
         self.pool3 = nn.MaxPool2d(3, 2, 1)
         self.inception4 = self._build_inception_layer(cfg['4'])
@@ -166,17 +177,30 @@ class GoogleNet(nn.Module):
 
     @mode.setter
     def mode(self, value):
-        if value not in VALID_MODES:
-            raise ValueError(
-                'Invalid mode %s, pick among {}'.format(VALID_MODES) % value)
-
-        self._mode = value
+        raise ValueError('You cannot modify mode after construction')
 
     def forward(self, x):
         out = self.stem(x)
         out = self.inception3(out)
         out = self.pool3(out)
-        out = self.inception4(out)
+        aux1 = None
+        aux2 = None
+        if self.aux and self.training:
+            # in training mode
+            # add aux
+            for i in range(len(self.inception4)):
+                out = self.inception4[i](out)
+                if i == 0:
+                    # aux1 after 4a
+                    aux1 = self.aux1_conv(out)
+                    aux1 = aux1.reshape(aux1.shape[0], -1)
+                    aux1 = self.aux1_fc(aux1)
+                if i == 3:
+                    # aux2 after 4d
+                    aux2 = self.aux2_conv(out)
+                    aux2 = aux2.reshape(aux2.shape[0], -1)
+                    aux2 = self.aux2_fc(aux2)
+
         out = self.pool4(out)
         out = self.inception5(out)
         out = self.pool5(out)
@@ -185,7 +209,7 @@ class GoogleNet(nn.Module):
         out = out.view(out.shape[0], -1)
 
         out = self.fcs(out)
-        return out
+        return out, aux1, aux2
 
     def _build_inception_layer(self, cfgs):
         """
