@@ -200,6 +200,10 @@ class GoogleNet(nn.Module):
                     aux2 = self.aux2_conv(out)
                     aux2 = aux2.reshape(aux2.shape[0], -1)
                     aux2 = self.aux2_fc(aux2)
+        else:
+            # in eval mode or not aux unit
+            # just forward
+            out = self.inception4(out)
 
         out = self.pool4(out)
         out = self.inception5(out)
