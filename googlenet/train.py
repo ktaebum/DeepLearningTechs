@@ -111,13 +111,13 @@ def prepare_data():
     data = {
         'train':
             datasets.CIFAR10(
-                '../data/',
+                './data/',
                 train=True,
                 download=True,
                 transform=preprocess['train']),
         'test':
             datasets.CIFAR10(
-                '../data/',
+                './data/',
                 train=False,
                 download=False,
                 transform=preprocess['test'])
