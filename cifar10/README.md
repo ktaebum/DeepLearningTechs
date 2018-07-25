@@ -13,7 +13,7 @@
 - **Train Time**: 728.152991 seconds
 - **Best Accuracy**: 80.1%
 
-# ResNet
+# ResNet-152 (Without Final AvgPooling)
 
 ## Hyperparameter Setting
 

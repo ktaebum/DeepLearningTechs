@@ -21,6 +21,8 @@ bottle_neck_channels = (64, 128, 256, 512, 1024)
 basic_channels = (64, 64, 128, 256, 512)
 
 cfgs = {
+    # number of blocks configuration
+    # corresponding to conv2, conv3, conv4, conv5
     '18': (2, 2, 2, 2),
     '34': (3, 4, 6, 3),
     '50': (3, 4, 6, 3),
@@ -47,21 +49,22 @@ class ResNet(nn.Module):
 
         if layer_num not in cfgs.keys():
             raise KeyError('Invalid Mode: %s' % layer_num)
+        self._mode = layer_num
 
-        # set basic building block
+        # choose which building block to use
         use_basic = layer_num in ('18', '34')
         block = BasicBlock if use_basic else BottleNeckBlock
         channels = basic_channels if use_basic else bottle_neck_channels
         cfg = cfgs[layer_num]
 
+        # first conv
         self.conv1 = nn.Sequential(
             nn.Conv2d(3, 64, 3, 1, 1),
             nn.BatchNorm2d(64),
             nn.ReLU(True),
         )
 
-        self._mode = layer_num
-
+        # build residuals
         self.residuals = []
         for i in range(4):
             self.residuals.append(
@@ -72,18 +75,18 @@ class ResNet(nn.Module):
                     channels[i + 1],
                     strides[i],
                 ))
-
         self.residuals = nn.Sequential(*self.residuals)
 
-        self.fc = nn.Linear(7 * 7 * channels[-1], 10)
+        # last linear
+        self.avg_pool = nn.AvgPool2d(7, 1)
+        self.fc = nn.Linear(channels[-1], 10)
 
     def forward(self, x):
         out = self.conv1(x)
         out = self.residuals(out)
-
-        out = out.reshape(-1, np.prod(out.shape[1:]))
+        out = self.avg_pool(out)
+        out = out.reshape(out.shape[0], -1)
         out = self.fc(out)
-
         return out
 
     @property
@@ -96,6 +99,9 @@ class ResNet(nn.Module):
 
 
 class ResNetTrainer(ModelTrainer):
+    """
+    ResNet Trainer
+    """
 
     def __init__(self, *args, **kwargs):
         super(ResNetTrainer, self).__init__(*args, **kwargs)
@@ -113,15 +119,20 @@ class ResNetTrainer(ModelTrainer):
 
 
 class ResidualLayer(nn.Module):
+    """
+    Wrapper class for making residual layer
+    using blocks
+    """
 
     def __init__(self, block, stack, in_channel, out_channel, stride=2):
         super(ResidualLayer, self).__init__()
-        self.block = block
+        self.block = block  # basic or bottleneck
 
+        # build blocks
         self.blocks = nn.ModuleList([])
         for s in range(stack):
             if s == 0:
-                # down sample!
+                # down sample
                 self.blocks.append(
                     self.block(in_channel, out_channel, True, stride))
             else:
@@ -131,6 +142,7 @@ class ResidualLayer(nn.Module):
 
         padding = 0 if stride == 1 else 1
 
+        # for shortcut
         self.resize_input = nn.Sequential(
             nn.Conv2d(
                 in_channel,
@@ -146,6 +158,7 @@ class ResidualLayer(nn.Module):
         out = x
         block_len = len(self.blocks)
         for s in range(block_len):
+            # resize becomes empty if s != 0
             resize = self.resize_input if s == 0 else nn.Sequential()
             shortcut = resize(out)
             conv_result = self.blocks[s](out)
@@ -156,16 +169,25 @@ class ResidualLayer(nn.Module):
 
 
 class BottleNeckBlock(nn.Module):
+    """
+    BottleNeckBlock
+    go through 1x1, 3x3, 1x1
+    """
 
     def __init__(self, in_channels, out_channels, downsample=False,
                  stride=1):
         super(BottleNeckBlock, self).__init__()
 
+        # since I use 2 kinds of downsample
+        # 1. 30 -> 28
+        # 2. n -> n // 2
         if downsample:
             if stride == 1:
+                # 30 -> 28
                 padding = 0
             else:
                 # stride == 2
+                # after 30 -> 28
                 padding = 1
         else:
             padding = 1
@@ -202,6 +224,7 @@ class BasicBlock(nn.Module):
                  stride=1):
         super(BasicBlock, self).__init__()
 
+        # same as bottleneck
         if downsample:
             if stride == 1:
                 padding = 0

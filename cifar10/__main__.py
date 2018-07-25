@@ -132,7 +132,7 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # model = GoogleNet(mode='improved', aux=False).to(device)
-    model = ResNet(layer_num='152').to(device)
+    model = ResNet(layer_num='50').to(device)
     model_name = model.__class__.__name__ + '_' + model.mode
 
     criterion = nn.CrossEntropyLoss().to(device)
@@ -145,7 +145,6 @@ def main():
         checkpoint = torch.load(os.path.join('./saved_models', pretrained))
         pattern = r'_[0-9]+\.'
         last_epoch = int(re.findall(pattern, pretrained)[-1][1:-1])
-        # model.load_state_dict(checkpoint['state_dict'])
         if device.type == 'cuda':
             load_parallel_state_dict(model, checkpoint['state_dict'])
         else:
