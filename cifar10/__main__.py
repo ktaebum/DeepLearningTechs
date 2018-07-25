@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torch.backends.cudnn as cudnn
 import torch.utils.data.dataloader as dataloader
 
 import torchvision.datasets as datasets
@@ -12,6 +11,7 @@ import re
 import argparse
 
 from models.googlenet import GoogleNet, GoogleNetTrainer
+from models.resnet import ResNet, ResNetTrainer
 from utils.model_io import load_parallel_state_dict
 
 parser = argparse.ArgumentParser()
@@ -131,10 +131,11 @@ def main():
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    model = GoogleNet(mode='improved', aux=False).to(device)
+    # model = GoogleNet(mode='improved', aux=False).to(device)
+    model = ResNet(layer_num='152').to(device)
     model_name = model.__class__.__name__ + '_' + model.mode
 
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss().to(device)
     optimizer = optim.Adam(
         model.parameters(), lr=learning_rate, weight_decay=5e-4)
 
@@ -170,8 +171,8 @@ def main():
         'device': device
     }
 
-    trainer = GoogleNetTrainer(model, loader, hyperparameters, settings)
-
+    trainer = ResNetTrainer(model, loader, hyperparameters, settings)
+    # trainer = GoogleNetTrainer(model, loader, hyperparameters, settings)
     if is_train:
         trainer.train()
     else:

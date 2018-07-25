@@ -144,8 +144,7 @@ class ModelTrainer:
             self.files['summary'].write(
                 'total_train_time = %f\n' % total_train_time)
             self.files['summary'].write('best accuracy = %f\n' % best_acc)
-
-        self.__close_files()
+            self.__close_files()
 
     def test(self):
         elapsed_test_time, (test_loss, test_acc,
