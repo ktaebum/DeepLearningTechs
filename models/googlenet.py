@@ -13,6 +13,8 @@ Description:
 import torch
 import torch.nn as nn
 
+from utils.train import ModelTrainer
+
 VALID_MODES = ('naive', 'improved')
 
 # naive inception configuration
@@ -223,3 +225,39 @@ class GoogleNet(nn.Module):
         for cfg in cfgs:
             layers.append(self.Inception(*cfg))
         return nn.Sequential(*layers)
+
+
+class GoogleNetTrainer(ModelTrainer):
+
+    def __init__(self, *args, **kwargs):
+        super(GoogleNetTrainer, self).__init__(*args, **kwargs)
+
+    def update_optimizer(self, outputs, labels):
+        optimizer = self.params['optimizer']
+        optimizer.zero_grad()
+        loss = self.calculate_loss(outputs, labels)
+        loss.backward()
+        optimizer.step()
+        return loss
+
+    def calculate_loss(self, outputs, labels):
+        out, aux1, aux2 = outputs
+        loss_function = self.params['loss_function']
+
+        loss = loss_function(out, labels)
+
+        if aux1 is not None:
+            loss += (0.3 * loss_function(aux1, labels))
+
+        if aux2 is not None:
+            loss += (0.3 * loss_function(aux2, labels))
+
+        return loss
+
+    def calculate_predicted_labels(self, outputs):
+        out, _, _ = outputs
+
+        _, predicts = torch.max(out, 1)
+        return predicts
+
+    pass
