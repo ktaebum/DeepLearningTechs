@@ -78,3 +78,5 @@ def __build_loader(data, batch_size=64):
 
     loader['test'] = dataloader.DataLoader(
         data['test'], batch_size=batch_size)
+
+    return loader
