@@ -14,65 +14,10 @@ from models.googlenet import GoogleNet, GoogleNetTrainer
 from models.resnet import ResNet, ResNetTrainer
 from utils.model_io import load_parallel_state_dict
 
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    '-p',
-    '--print-every',
-    help='print every specific number of iteration',
-    metavar='',
-    type=int,
-    default=100)
-parser.add_argument(
-    '-b',
-    '--batch-size',
-    help='set number of batch size',
-    metavar='',
-    type=int,
-    default=128)
-parser.add_argument(
-    '-e',
-    '--num-epochs',
-    help='set number of total epochs',
-    metavar='',
-    type=int,
-    default=5)
-parser.add_argument(
-    '-lr',
-    '--learning-rate',
-    help='set training learning rate',
-    metavar='',
-    type=float,
-    default=1e-3)
-parser.add_argument(
-    '-v',
-    '--verbose',
-    help='set whether verbose train or not',
-    action='store_true')
-parser.add_argument(
-    '-t',
-    '--train',
-    help='set whether run in train mode or not',
-    action='store_true')
-parser.add_argument(
-    '-l',
-    '--log',
-    help='set whether save some result files',
-    action='store_true')
-parser.add_argument(
-    '-s',
-    '--save-every',
-    help='if set, save model while training',
-    metavar='',
-    type=int,
-    default=0)
-parser.add_argument(
-    '-m',
-    '--model',
-    help='load_pretrained model',
-    metavar='',
-    type=str,
-    default=None)
-args = parser.parse_args()
+from preprocess.args import get_args
+from preprocess.data import prepare_cifar10
+
+args = get_args()
 
 # Hyperparameters
 batch_size = args.batch_size
@@ -84,52 +29,12 @@ pretrained = args.model
 verbose = args.verbose
 is_train = args.train
 is_log = args.log
-
-
-def prepare_data():
-    normalize = transforms.Normalize((0.4914, 0.4822, 0.4465),
-                                     (0.247, 0.243, 0.261))
-    preprocess = {
-        'train':
-            transforms.Compose([
-                transforms.RandomHorizontalFlip(),
-                transforms.RandomCrop(32, 4),
-                transforms.ToTensor(), normalize
-            ]),
-        'test':
-            transforms.Compose([transforms.ToTensor(), normalize])
-    }
-
-    data = {
-        'train':
-            datasets.CIFAR10(
-                './data/',
-                train=True,
-                download=True,
-                transform=preprocess['train']),
-        'test':
-            datasets.CIFAR10(
-                './data/',
-                train=False,
-                download=False,
-                transform=preprocess['test'])
-    }
-
-    loader = {
-        'train':
-            dataloader.DataLoader(
-                data['train'], batch_size=batch_size, shuffle=True),
-        'test':
-            dataloader.DataLoader(data['test'], batch_size=batch_size)
-    }
-    return loader
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 def main():
-    loader = prepare_data()
+    loader = prepare_cifar10()
     last_epoch = 0
-
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # model = GoogleNet(mode='improved', aux=False).to(device)
     model = ResNet(layer_num='50').to(device)
