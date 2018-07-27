@@ -28,6 +28,7 @@
 
 - **Train Time**: 1543.954135 seconds
 - **Best Accuracy**: 80.00%
+![ResNet152](https://i.imgur.com/4NXkzRw.png)
 
 # ResNet-50 
 
@@ -44,5 +45,5 @@
 
 - **Train Time**: 722.149847 seconds
 - **Best Accuracy**: 77.89%
-
+![ResNet50](https://i.imgur.com/UM5bgMn.png)
 
