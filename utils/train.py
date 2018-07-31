@@ -1,8 +1,6 @@
 import os
-import re
 import torch
 import torch.nn as nn
-import torch.optim as optim
 import torch.backends.cudnn as cudnn
 import time
 
@@ -29,11 +27,7 @@ class ModelTrainer:
             'device',
             torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
 
-        if self.settings['device'].type == 'cuda':
-            self.model = nn.DataParallel(model)
-            cudnn.benchmark = True
-        else:
-            self.model = model
+        self.prepare_model(model)
         self.data_loader = data_loader
 
         # hyperparameters
@@ -43,7 +37,7 @@ class ModelTrainer:
         self.params.setdefault('learning_rate', 1e-3)
         self.params.setdefault('num_epochs', 5)
         self.params.setdefault('weight_decay', 0)
-
+        """
         # optimizers could be many
         self.params.setdefault(
             'optimizer',
@@ -54,6 +48,7 @@ class ModelTrainer:
 
         # loss_function could be many
         self.params.setdefault('loss_function', nn.CrossEntropyLoss())
+        """
 
         # something else to save in log
         # must be dictionary or None
@@ -153,6 +148,17 @@ class ModelTrainer:
         if self.settings['verbose']:
             print('Test Result [%f sec elapsed]: loss = %f, accuracy = %f' %
                   (elapsed_test_time, test_loss, test_acc))
+
+    def prepare_model(self, models):
+        """
+        if not override,
+        treate as single model
+        """
+        if self.settings['device'].type == 'cuda':
+            self.model = nn.DataParallel(models)
+            cudnn.benchmark = True
+        else:
+            self.model = models
 
     def update_optimizer(self, outputs, labels):
         """
