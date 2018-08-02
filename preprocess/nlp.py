@@ -31,12 +31,17 @@ class Vocabulary:
         self(Vocabulary.UNK)
         self(Vocabulary.PAD)
 
-    def __getitem__(self, word):
+    def __getitem__(self, word_or_idx):
         """
         if in dictionary, return idx
         else return UNK's idx
         """
-        return self.word2idx.get(word, self.word2idx[Vocabulary.UNK])
+
+        if isinstance(word_or_idx, str):
+            return self.word2idx.get(word_or_idx,
+                                     self.word2idx[Vocabulary.UNK])
+        else:
+            return self.idx2word.get(word_or_idx, Vocabulary.UNK)
 
     def __len__(self):
         return self.n_words
@@ -56,7 +61,7 @@ class Vocabulary:
         return self.word2idx[word]
 
 
-def sentence2words_list(sentence, normalize=True):
+def sentence2words(sentence, normalize=True):
     """
     Convert sentence to word list
     """
@@ -87,7 +92,7 @@ def build_coco_vocabulary(filename=None):
     imgs = imgs['annotations']
 
     for img in imgs:
-        words = sentence2words_list(img['caption'])
+        words = sentence2words(img['caption'])
 
         for word in words:
             vocab(word)

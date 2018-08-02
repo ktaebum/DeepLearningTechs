@@ -4,7 +4,7 @@ import torch.utils.data.dataloader as dataloader
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 
-from preprocess.nlp import sentence2words_list, Vocabulary
+from preprocess.nlp import sentence2words, Vocabulary
 
 
 def prepare_coco_detection(vocabulary, batch_size=64, max_len=50):
@@ -32,8 +32,8 @@ def prepare_coco_detection(vocabulary, batch_size=64, max_len=50):
             ),
     }
 
-    def _map_wrapper(lists, function, casting=None):
-        mapping_result = list(map(lambda x: function(x), lists))
+    def _map_wrapper(lists, function, casting=None, **kwargs):
+        mapping_result = list(map(lambda x: function(x, **kwargs), lists))
         if casting:
             mapping_result = casting(mapping_result)
         return mapping_result
@@ -45,9 +45,15 @@ def prepare_coco_detection(vocabulary, batch_size=64, max_len=50):
 
         images, captions = zip(*data)
 
-        def _caption2long_tensor(caption):
-            caption = caption[0]
-            words = sentence2words_list(caption)
+        def _extract_ith_caption(captions, i=0):
+            """
+            collect ith-caption among 5 captions
+            default first
+            """
+            return captions[i]
+
+        def _caption2idx(caption):
+            words = sentence2words(caption)
 
             idxs = _map_wrapper([Vocabulary.SOS] + words + [Vocabulary.EOS],
                                 vocabulary)
@@ -65,12 +71,12 @@ def prepare_coco_detection(vocabulary, batch_size=64, max_len=50):
             return idxs
 
         def _min_length(caption):
-            return min(len(caption[0]), max_len)
+            return min(len(caption), max_len)
 
         images = torch.stack(images, 0)
-        targets = _map_wrapper(captions, _caption2long_tensor,
-                               torch.LongTensor)
-        lengths = _map_wrapper(captions, _min_length, torch.LongTensor)
+        captions = _map_wrapper(captions, _extract_ith_caption, i=0)
+        targets = _map_wrapper(captions, _caption2idx, torch.LongTensor)
+        lengths = _map_wrapper(captions, _min_length)
 
         return images, targets, lengths
 

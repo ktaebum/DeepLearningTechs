@@ -51,7 +51,8 @@ class COCODecoder(nn.Module):
         embedding = torch.cat((feature.unsqueeze(1), embedding), 1)
 
         packed = pack_padded_sequence(embedding, lengths, batch_first=True)
-        h, c = self.lstm(packed)
+
+        h, _ = self.lstm(packed)
 
         out = self.h2y(h[0])
 
@@ -64,11 +65,14 @@ class COCOTrainer(ModelTrainer):
         super(COCOTrainer, self).__init__(*args, **kwargs)
 
     def prepare_model(self, models):
+        """
         if self.settings['device'].type == 'cuda':
             self.model = [nn.DataParallel(model) for model in models]
             cudnn.benchmark = True
         else:
             self.model = models
+        """
+        self.model = models
 
     def update_optimizer(self, outputs, labels):
         encoder, decoder = self.model
@@ -114,7 +118,7 @@ class COCOTrainer(ModelTrainer):
 
             images = images.to(device)
             captions = captions.to(device)
-            lengths = lengths.to(device)
+            lengths = torch.tensor(lengths, dtype=torch.long, device=device)
 
             targets = pack_padded_sequence(
                 captions, lengths, batch_first=True)[0]

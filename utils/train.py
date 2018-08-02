@@ -58,7 +58,7 @@ class ModelTrainer:
         self.folder_name = None
         self.files = None
 
-    def train(self):
+    def train(self, test_also=True):
 
         optimizer = self.params['optimizer']
 
@@ -95,15 +95,21 @@ class ModelTrainer:
                 train_loss, train_acc,
                 last_train_iter) = self._train_or_test_single_epoch(
                     last_train_iter, 'train')
+            """
             elapsed_test_time, (
                 test_loss, test_acc,
                 last_test_iter) = self._train_or_test_single_epoch(
                     last_test_iter, 'test')
+            """
 
-            total_train_time += elapsed_train_time
+            elapsed_test_time = 0
+            test_loss = 0.
+            test_acc = 0.
 
             if test_acc > best_acc:
                 best_acc = test_acc
+
+            total_train_time += elapsed_train_time
 
             if verbose:
                 print('Train epoch: %d [%f sec], loss = %f, accuracy = %f' %
