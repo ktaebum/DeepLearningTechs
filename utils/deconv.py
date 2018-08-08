@@ -9,6 +9,52 @@ Description:
 import numpy as np
 
 
+class MaxUnpool2D:
+
+    def __init__(self, kernel_size, stride=None, padding=0):
+        if isinstance(kernel_size, int):
+            kernel_size = (kernel_size, kernel_size)
+
+        if stride is None:
+            stride = kernel_size
+        elif isinstance(stride, int):
+            stride = (stride, stride)
+
+        if isinstance(padding, int):
+            padding = (padding, padding)
+
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
+
+    def __call__(self, *args, **kwargs):
+        return (self._forward(*args, **kwargs))
+
+    def _forward(self, x, indices, output_size=None):
+        B, C, HI, WI = x.shape
+
+        PH, PW = self.padding
+        SH, SW = self.stride
+        HF, WF = self.kernel_size
+
+        HO = SH * (HI - 1) - 2 * PH + HF  # cutoff padding later
+        WO = SW * (WI - 1) - 2 * PW + WF
+
+        out_shape = (B, C, HO, WO)
+
+        out = np.zeros(out_shape, dtype=np.float32)
+
+        for b in range(B):
+            for c in range(C):
+                idx_vector = indices[b, c].reshape(-1)
+                x_vector = x[b, c].reshape(-1)
+
+                out_vector = out[b, c].reshape(-1)
+                out_vector[idx_vector] = x_vector
+
+        return out
+
+
 class ConvTranspose2D:
 
     def __init__(self,

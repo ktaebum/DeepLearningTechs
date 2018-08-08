@@ -75,7 +75,3 @@ class DeconvTest(unittest.TestCase):
 
         self.assertLessEqual(
             np.linalg.norm(correct.detach().numpy() - my), TOL)
-
-
-if __name__ == "__main__":
-    unittest.main()
