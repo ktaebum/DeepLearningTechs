@@ -10,6 +10,9 @@ import os
 import re
 import json
 
+import nltk
+from collections import Counter
+
 
 class Vocabulary:
     """
@@ -76,7 +79,7 @@ def sentence2words(sentence, normalize=True):
     return words
 
 
-def build_coco_vocabulary(filename=None):
+def build_coco_vocabulary(filename=None, threshold=4):
     """
     Vocabulary builder for coco caption
 
@@ -91,10 +94,14 @@ def build_coco_vocabulary(filename=None):
     imgs = json.load(open(annotation_file))
     imgs = imgs['annotations']
 
+    counter = Counter()
     for img in imgs:
-        words = sentence2words(img['caption'])
+        words = nltk.tokenize.word_tokenize(img['caption'].lower())
+        counter.update(words)
 
-        for word in words:
-            vocab(word)
+    words = [word for word, cnt in counter.items() if cnt >= threshold]
+
+    for word in words:
+        vocab(word)
 
     return vocab
