@@ -37,10 +37,12 @@ def main():
               len(vocabulary))
 
     encoder = AttentionEncoder().to(device)
-    decoder = AttentionDecoder(2048, 512, len(vocabulary)).to(device)
+    decoder = AttentionDecoder(512, 512, len(vocabulary)).to(device)
+    """
     load_parallel_state_dict(
         decoder,
         torch.load('./checkpoints/attention_000.pth.tar')['decoder'])
+    """
 
     encoder = nn.DataParallel(encoder)
     decoder = nn.DataParallel(decoder)

@@ -94,10 +94,13 @@ class AttentionDecoder(nn.Module):
         self.hidden_size = hidden_size
         self.vocab_size = vocab_size
 
+        self.dropout = nn.Dropout(0.5)
+
         # self.inith = nn.Linear(512, self.hidden_size)
         # self.initc = nn.Linear(512, self.hidden_size)
 
         self.fc_out = nn.Linear(hidden_size, vocab_size)
+        self.fc_dropout = nn.Dropout(0.5)
 
         # these are for attention
         self.h2a = nn.Linear(hidden_size, 512)
@@ -132,6 +135,7 @@ class AttentionDecoder(nn.Module):
         batch_size, timestep = captions.shape
 
         embedding = self.embedding(captions)
+        embedding = self.dropout(embedding)
         # batch * seq_len * embed_size
 
         z = torch.mean(feature, 1)  # batch * 512
@@ -156,7 +160,8 @@ class AttentionDecoder(nn.Module):
             h_0, c_0 = self.lstm(batch_cat,
                                  (h_0[:batch_size], c_0[:batch_size]))
 
-            predicts[:batch_size, t] = self.fc_out(h_0)
+            output = self.fc_out(self.fc_dropout(h_0))
+            predicts[:batch_size, t] = output
 
         return predicts
 
